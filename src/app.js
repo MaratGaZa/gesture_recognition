@@ -60,15 +60,22 @@ async function main() {
     const { landmarks } = await detectHand(video, timestamp);
     if (!landmarks) return; // no hand detected – skip this frame
 
+    console.log('✋ Hand detected, landmarks:', landmarks.length);
+
     // b) Identify which gesture (if any) the landmarks represent
     const gesture = detectGesture(landmarks);
-    if (!gesture) return; // no recognised gesture
+    if (!gesture) {
+      console.log('❌ No gesture recognized');
+      return;
+    }
+    console.log('🎯 Gesture:', gesture);
 
     // c) Apply cooldown / duplicate filtering
     const toEmit = reactionState.update(gesture);
     if (!toEmit) return; // still in cooldown period
 
     // d) Render the appropriate emoji
+    console.log('✅ Emitting emoji:', toEmit);
     showEmoji(toEmit, landmarks);
   });
 
