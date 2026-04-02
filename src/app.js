@@ -80,6 +80,44 @@ async function main() {
   // 3️⃣ Create state manager (default cooldown = 500 ms)
   const reactionState = new ReactionState();
 
+  // 3b️⃣ Wait for video to be actually playing (not just initialized)
+  updateStatus('⏳ Ожидание готовности видео...');
+  let waitCount = 0;
+
+  await new Promise((resolve) => {
+    if (video.readyState >= 3) {
+      // HAVE_ENOUGH_DATA
+      resolve();
+    } else {
+      video.oncanplay = () => {
+        video.oncanplay = null;
+        addLog('video.oncanplay fired');
+        resolve();
+      };
+    }
+    // Timeout fallback
+    setTimeout(() => {
+      if (waitCount < 100) {
+        waitCount++;
+        addLog('readyState=' + video.readyState + ' videoWidth=' + video.videoWidth);
+        setTimeout(() => resolve(), 500);
+      }
+    }, 500);
+  });
+
+  // Дополнительно ждём событие playing если возможно
+  if (video.paused) {
+    addLog('Видео на паузе, запускаем...');
+    try {
+      await video.play();
+    } catch (e) {
+      addLog('play() error: ' + e.message);
+    }
+  }
+
+  addLog('Video readyState=' + video.readyState + ' dimensions=' + video.videoWidth + 'x' + video.videoHeight);
+  updateStatus('✅ Видео готово: ' + video.videoWidth + 'x' + video.videoHeight);
+
   // 4️⃣ Start the animation loop
   updateStatus('🚀 Запуск цикла...');
   let frameCount = 0;
