@@ -358,3 +358,7 @@
       at error (src/core/camera.js:31:13)
       at Object.<anonymous> (src/core/__tests__/camera.test.js:76:5)
 
+
+> stream-fan-project@1.0.0 test
+> jest
+

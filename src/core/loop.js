@@ -6,22 +6,30 @@
  */
 export function startLoop(callback) {
   let running = true;
-  let intervalId = null;
+  let frameId = null;
 
-  function loop() {
+  async function loop(timestamp) {
     if (!running) return;
-    callback(performance.now());
+
+    try {
+      await callback(timestamp); // ✅ ждём завершения детекции
+    } catch (err) {
+      console.error("[loop] frame error:", err);
+    }
+
+    if (running) {
+      frameId = requestAnimationFrame(loop);
+    }
   }
 
-  // Use setInterval with ~30fps for mobile compatibility
-  intervalId = setInterval(loop, 33);
+  frameId = requestAnimationFrame(loop);
 
   return {
     stop() {
       running = false;
-      if (intervalId !== null) {
-        clearInterval(intervalId);
-        intervalId = null;
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
+        frameId = null;
       }
     },
   };

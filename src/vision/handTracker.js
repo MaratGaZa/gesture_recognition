@@ -3,20 +3,15 @@
 let hands = null;
 let HandsClassRef = null;
 let currentResolve = null;
+let currentTimeoutId = null;
 let handsReady = false;
 
-/**
- * Позволяет внедрить (замокать) класс Hands извне (для тестов)
- * @param {any} cls
- */
+const DETECT_TIMEOUT_MS = 200; // если onResults не пришёл за 200ms — идём дальше
+
 export function setHandsClass(cls) {
   HandsClassRef = cls;
 }
 
-/**
- * Инициализирует MediaPipe Hands.
- * @returns {Promise<void>}
- */
 export async function init() {
   const HandsClass =
     HandsClassRef ||
@@ -41,36 +36,29 @@ export async function init() {
     minTrackingConfidence: 0.3,
   });
 
-  // Устанавливаем onResults ОДИН раз при инициализации
   hands.onResults(onResults);
   handsReady = true;
 }
 
-/**
- * Callback для MediaPipe Hands — вызывается асинхронно после обработки кадра.
- * @param {Object} results - результаты от MediaPipe
- */
 function onResults(results) {
-  if (currentResolve) {
-    if (
-      results &&
-      results.multiHandLandmarks &&
-      results.multiHandLandmarks.length > 0
-    ) {
-      currentResolve({ landmarks: results.multiHandLandmarks[0] });
-    } else {
-      currentResolve({ landmarks: null });
-    }
-    currentResolve = null;
+  if (!currentResolve) return;
+
+  // Отменяем таймаут — ответ пришёл вовремя
+  if (currentTimeoutId) {
+    clearTimeout(currentTimeoutId);
+    currentTimeoutId = null;
+  }
+
+  const resolve = currentResolve;
+  currentResolve = null;
+
+  if (results?.multiHandLandmarks?.length > 0) {
+    resolve({ landmarks: results.multiHandLandmarks[0] });
+  } else {
+    resolve({ landmarks: null });
   }
 }
 
-/**
- * Детектирует руку на видео-кадре.
- * @param {HTMLVideoElement} video – элемент с видео-потоком
- * @param {number} time – метка времени (для синхронизации)
- * @returns {Promise<{landmarks: Array<{x: number, y: number, z: number}> | null}>}
- */
 export function detect(video, time) {
   return new Promise((resolve) => {
     if (!hands || !handsReady) {
@@ -78,40 +66,55 @@ export function detect(video, time) {
       return;
     }
 
-    // Если предыдущий вызов ещё не завершился, resolved с null
+    // ✅ Ключевая проверка: видео должно быть готово и иметь размеры
+    if (
+      !video ||
+      video.readyState < 2 || // HAVE_CURRENT_DATA
+      video.videoWidth === 0 ||
+      video.videoHeight === 0
+    ) {
+      resolve({ landmarks: null });
+      return;
+    }
+
+    // Если предыдущий вызов завис — сбрасываем
     if (currentResolve) {
+      if (currentTimeoutId) {
+        clearTimeout(currentTimeoutId);
+        currentTimeoutId = null;
+      }
       currentResolve({ landmarks: null });
+      currentResolve = null;
     }
 
     currentResolve = resolve;
 
-    // Timeout fallback - увеличил до 3 секунд для мобильных
-    const timeoutId = setTimeout(() => {
+    // ✅ Таймаут — защита от зависшего Promise
+    currentTimeoutId = setTimeout(() => {
       if (currentResolve === resolve) {
         currentResolve = null;
+        currentTimeoutId = null;
         resolve({ landmarks: null });
       }
-    }, 3000);
+    }, DETECT_TIMEOUT_MS);
 
-    // Передаём видео напрямую
     try {
       const result = hands.send({ image: video });
 
-      // Если send() вернул Promise
       if (result instanceof Promise) {
-        result.then(() => {
-          clearTimeout(timeoutId);
-        }).catch(() => {
-          clearTimeout(timeoutId);
+        result.catch(() => {
           if (currentResolve === resolve) {
+            clearTimeout(currentTimeoutId);
+            currentTimeoutId = null;
             currentResolve = null;
             resolve({ landmarks: null });
           }
         });
       }
     } catch (e) {
-      clearTimeout(timeoutId);
       if (currentResolve === resolve) {
+        clearTimeout(currentTimeoutId);
+        currentTimeoutId = null;
         currentResolve = null;
         resolve({ landmarks: null });
       }
