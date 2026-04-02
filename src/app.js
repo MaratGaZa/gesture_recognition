@@ -45,9 +45,9 @@ async function main() {
   // 2️⃣ Load MediaPipe Hands model
   try {
     await initHandTracker();
-    console.log("✅ MediaPipe Hands model loaded");
+    updateStatus("✅ MediaPipe Hands загружен");
   } catch (err) {
-    console.error("❌ Hand‑tracker initialisation failed:", err);
+    updateStatus("❌ Hand‑tracker не загружен: " + err.message);
     return;
   }
 
@@ -66,13 +66,51 @@ async function main() {
     console.log('[STATUS]', msg);
   }
 
+  // 3b️⃣ Wait for video to be truly ready
+  updateStatus('⏳ Ожидание видео...');
+  await new Promise((resolve) => {
+    if (video.readyState >= 3) {
+      // HAVE_ENOUGH_DATA
+      resolve();
+    } else {
+      video.oncanplay = () => {
+        video.oncanplay = null;
+        resolve();
+      };
+    }
+  });
+  updateStatus('✅ Видео готово, запуск цикла...');
+
   // 4️⃣ Start the animation loop
   let frameCount = 0;
+  let lastLandmarkTime = 0;
   startLoop(async (timestamp) => {
     frameCount++;
     if (frameCount % 30 === 0) {
-      updateStatus('🔄 Работает... (кадр ' + frameCount + ')');
+      updateStatus('🔄 Работает... (кадр ' + frameCount + ') video.readyState=' + video.readyState);
     }
+
+    // a) Get landmarks for the current frame
+    const { landmarks } = await detectHand(video, timestamp);
+    if (!landmarks) return; // no hand detected – skip this frame
+
+    updateStatus('✋ Рука обнаружена!');
+
+    // b) Identify which gesture (if any) the landmarks represent
+    const gesture = detectGesture(landmarks);
+    if (!gesture) {
+      updateStatus('❌ Жест не распознан');
+      return;
+    }
+
+    // c) Apply cooldown / duplicate filtering
+    const toEmit = reactionState.update(gesture);
+    if (!toEmit) return; // still in cooldown period
+
+    // d) Render the appropriate emoji
+    updateStatus('🎯 Жест: ' + toEmit);
+    showEmoji(toEmit, landmarks);
+  });
 
     // a) Get landmarks for the current frame
     const { landmarks } = await detectHand(video, timestamp);
