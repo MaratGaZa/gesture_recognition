@@ -298,3 +298,63 @@
       at error (src/core/camera.js:31:13)
       at Object.<anonymous> (src/core/__tests__/camera.test.js:76:5)
 
+
+> stream-fan-project@1.0.0 test
+> jest
+
+  console.error
+    Camera init error: Error: Permission denied
+        at Object.<anonymous> (/Users/margai74/Documents/Education/stream-fan-project/src/core/__tests__/camera.test.js:66:19)
+        at Promise.finally.completed (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
+        at _callCircusTest (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
+        at _runTest (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
+        at /Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:849:7
+        at _runTestsForDescribeBlock (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
+        at _runTestsForDescribeBlock (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
+        at run (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
+        at runAndTransformResultsToJestFormat (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
+        at jestAdapter (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/runner.js:101:19)
+        at runTestInternal (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-runner/build/index.js:275:16)
+        at runTest (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-runner/build/index.js:343:7)
+
+      29 |   } catch (error) {
+      30 |     // Propagate a clear error message
+    > 31 |     console.error('Camera init error:', error);
+         |             ^
+      32 |     throw error;
+      33 |   }
+      34 | }
+
+      at error (src/core/camera.js:31:13)
+      at Object.<anonymous> (src/core/__tests__/camera.test.js:69:5)
+
+  console.error
+    Camera init error: Error: Play failed
+        at Object.<anonymous> (/Users/margai74/Documents/Education/stream-fan-project/src/core/__tests__/camera.test.js:73:19)
+        at Promise.finally.completed (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
+        at _callCircusTest (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
+        at _runTest (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
+        at /Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:849:7
+        at _runTestsForDescribeBlock (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
+        at _runTestsForDescribeBlock (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
+        at run (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
+        at runAndTransformResultsToJestFormat (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
+        at jestAdapter (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-circus/build/runner.js:101:19)
+        at runTestInternal (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-runner/build/index.js:275:16)
+        at runTest (/Users/margai74/Documents/Education/stream-fan-project/node_modules/jest-runner/build/index.js:343:7)
+
+      29 |   } catch (error) {
+      30 |     // Propagate a clear error message
+    > 31 |     console.error('Camera init error:', error);
+         |             ^
+      32 |     throw error;
+      33 |   }
+      34 | }
+
+      at error (src/core/camera.js:31:13)
+      at Object.<anonymous> (src/core/__tests__/camera.test.js:76:5)
+

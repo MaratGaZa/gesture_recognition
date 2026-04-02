@@ -51,9 +51,10 @@ export async function init() {
 
   hands.setOptions({
     maxNumHands: 1,
-    modelComplexity: 1,
-    minDetectionConfidence: 0.5,
-    minTrackingConfidence: 0.5,
+    modelComplexity: 0, // Уменьшаем сложность модели для мобильных устройств
+    minDetectionConfidence: 0.3, // Снижаем пороги для лучшей стабильности
+    minTrackingConfidence: 0.3,
+    referenceImage: null, // Убираем ограничения по изображению
   });
 
   // Ждём готовности модели
@@ -75,15 +76,22 @@ export function detect(video, time) {
       return;
     }
 
-    hands.onResults((results) => {
+    // Обработчик результатов
+    const onResults = (results) => {
+      // Проверяем наличие результатов
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         // Возвращаем массив из 21 точки для первой найденной руки
         resolve({ landmarks: results.multiHandLandmarks[0] });
       } else {
+        // Если нет рук, возвращаем null
         resolve({ landmarks: null });
       }
-    });
+    };
 
+    // Устанавливаем обработчик результатов
+    hands.onResults(onResults);
+
+    // Отправляем изображение для обработки
     hands.send({ image: video });
   });
 }
