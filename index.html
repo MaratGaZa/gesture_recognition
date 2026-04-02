@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Stream Fan — Жесты в эмодзи</title>
+        <link rel="stylesheet" href="style.css" />
+        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    </head>
+    <body>
+        <div id="app">
+            <h1>Stream Fan</h1>
+            <p>Распознавание жестов руки и вывод эмодзи в реальном времени.</p>
+            <video id="video" autoplay playsinline></video>
+            <div id="emoji-container"></div>
+            <div id="error-message" style="display: none"></div>
+        </div>
+        <script type="module" src="/src/app.js"></script>
+    </body>
+</html>
