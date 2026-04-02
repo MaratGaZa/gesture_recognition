@@ -1,97 +1,107 @@
 // HandTracker module – обёртка вокруг MediaPipe Hands
 
 let hands = null;
+let HandsClassRef = null;
+let currentResolve = null;
+let handsReady = false;
+
+/**
+ * Позволяет внедрить (замокать) класс Hands извне (для тестов)
+ * @param {any} cls
+ */
+export function setHandsClass(cls) {
+  HandsClassRef = cls;
+}
 
 /**
  * Инициализирует MediaPipe Hands.
  * @returns {Promise<void>}
  */
 export async function init() {
-  // Detect the MediaPipe Hands constructor using a robust order that works both
-  // in a real browser and in the JSDOM test environment.
-  // Order of checks:
-  //   1. globalThis.Hands               – normal browser global
-  //   2. global.window.Hands            – set by the test suite via global.window
-  //   3. globalThis.window.Hands        – fallback when window is overridden in JSDOM
-  //   4. window.Hands                  – generic fallback
-  let HandsClass;
-  if (typeof globalThis.Hands !== "undefined") {
-    HandsClass = globalThis.Hands;
-  } else if (
-    typeof global !== "undefined" &&
-    typeof global.window !== "undefined" &&
-    typeof global.window.Hands !== "undefined"
-  ) {
-    HandsClass = global.window.Hands;
-  } else if (
-    typeof globalThis.window !== "undefined" &&
-    typeof globalThis.window.Hands !== "undefined"
-  ) {
-    HandsClass = globalThis.window.Hands;
-  } else if (
-    typeof window !== "undefined" &&
-    typeof window.Hands !== "undefined"
-  ) {
-    HandsClass = window.Hands;
-  } else {
-    HandsClass = undefined;
-  }
+  const HandsClass =
+    HandsClassRef ||
+    globalThis.Hands ||
+    (typeof window !== "undefined" ? window.Hands : undefined);
 
-  if (typeof HandsClass === "undefined") {
+  if (!HandsClass) {
     throw new Error(
       "MediaPipe Hands не загружен. Убедитесь, что скрипт подключён в index.html.",
     );
   }
 
   hands = new HandsClass({
-    locateFile: (file) => {
-      return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-    },
+    locateFile: (file) =>
+      `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
   });
 
   hands.setOptions({
     maxNumHands: 1,
-    modelComplexity: 0, // Уменьшаем сложность модели для мобильных устройств
-    minDetectionConfidence: 0.3, // Снижаем пороги для лучшей стабильности
-    minTrackingConfidence: 0.3,
-    referenceImage: null, // Убираем ограничения по изображению
+    modelComplexity: 0,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5,
   });
 
-  // Ждём готовности модели
-  await new Promise((resolve) => {
-    hands.onResults(() => resolve());
-  });
+  // Устанавливаем onResults ОДИН раз при инициализации
+  hands.onResults(onResults);
+  handsReady = true;
 }
 
 /**
- * Детектирует руку на видео‑кадре.
- * @param {HTMLVideoElement} video – элемент с видео‑потоком
+ * Callback для MediaPipe Hands — вызывается асинхронно после обработки кадра.
+ * @param {Object} results - результаты от MediaPipe
+ */
+function onResults(results) {
+  if (currentResolve) {
+    if (
+      results &&
+      results.multiHandLandmarks &&
+      results.multiHandLandmarks.length > 0
+    ) {
+      currentResolve({ landmarks: results.multiHandLandmarks[0] });
+    } else {
+      currentResolve({ landmarks: null });
+    }
+    currentResolve = null;
+  }
+}
+
+/**
+ * Детектирует руку на видео-кадре.
+ * @param {HTMLVideoElement} video – элемент с видео-потоком
  * @param {number} time – метка времени (для синхронизации)
  * @returns {Promise<{landmarks: Array<{x: number, y: number, z: number}> | null}>}
  */
 export function detect(video, time) {
   return new Promise((resolve) => {
-    if (!hands) {
+    if (!hands || !handsReady) {
       resolve({ landmarks: null });
       return;
     }
 
-    // Обработчик результатов
-    const onResults = (results) => {
-      // Проверяем наличие результатов
-      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        // Возвращаем массив из 21 точки для первой найденной руки
-        resolve({ landmarks: results.multiHandLandmarks[0] });
-      } else {
-        // Если нет рук, возвращаем null
+    // Если предыдущий вызов ещё не завершился, resolved с null
+    if (currentResolve) {
+      currentResolve({ landmarks: null });
+    }
+
+    currentResolve = resolve;
+
+    try {
+      const result = hands.send({ image: video });
+
+      // Если send() вернул Promise (зависит от версии MediaPipe)
+      if (result instanceof Promise) {
+        result.catch(() => {
+          if (currentResolve === resolve) {
+            currentResolve = null;
+            resolve({ landmarks: null });
+          }
+        });
+      }
+    } catch (e) {
+      if (currentResolve === resolve) {
+        currentResolve = null;
         resolve({ landmarks: null });
       }
-    };
-
-    // Устанавливаем обработчик результатов
-    hands.onResults(onResults);
-
-    // Отправляем изображение для обработки
-    hands.send({ image: video });
+    }
   });
 }
