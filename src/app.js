@@ -26,111 +26,100 @@ import { ReactionState } from "./state/reactionState.js";
 import { startLoop } from "./core/loop.js";
 import { showEmoji } from "./render/emojiRenderer.js";
 
+// Debug status element - создаём сразу
+const statusEl = document.createElement('div');
+statusEl.id = 'debug-status';
+statusEl.style.cssText = 'position:fixed;top:60px;left:0;right:0;background:rgba(255,0,0,0.9);color:#fff;padding:12px;font-family:monospace;font-size:16px;z-index:9999;text-align:center;';
+statusEl.textContent = '⏳ Инициализация...';
+document.body.appendChild(statusEl);
+
+// Debug log element
+const debugLog = document.createElement('div');
+debugLog.id = 'debug-log';
+debugLog.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.95);color:#0f0;padding:8px;font-family:monospace;font-size:10px;z-index:9999;max-height:100px;overflow-y:auto;';
+document.body.appendChild(debugLog);
+
+function updateStatus(msg) {
+  statusEl.textContent = msg;
+  console.log('[STATUS]', msg);
+}
+
+function addLog(msg) {
+  const time = new Date().toLocaleTimeString();
+  debugLog.innerHTML = '<div>[' + time + '] ' + msg + '</div>' + debugLog.innerHTML;
+  console.log('[LOG]', msg);
+}
+
 async function main() {
   // 1️⃣ Initialise video + webcam
   const video = document.getElementById("video");
   if (!video) {
-    console.error("Video element not found in DOM.");
+    updateStatus("❌ Video element not found");
     return;
   }
 
+  updateStatus('⏳ Запрос камеры...');
   try {
     await initCamera(video);
-    console.log("✅ Camera initialised");
+    updateStatus('✅ Камера инициализирована');
   } catch (err) {
-    console.error("❌ Camera initialisation failed:", err);
+    updateStatus("❌ Камера не работает: " + err.message);
     return;
   }
 
   // 2️⃣ Load MediaPipe Hands model
+  updateStatus('⏳ Загрузка MediaPipe...');
   try {
     await initHandTracker();
-    updateStatus("✅ MediaPipe Hands загружен");
+    updateStatus('✅ MediaPipe загружен');
   } catch (err) {
-    updateStatus("❌ Hand‑tracker не загружен: " + err.message);
+    updateStatus("❌ MediaPipe не загружен: " + err.message);
     return;
   }
 
-  // 3️⃣ Create state manager (default cooldown = 500 ms)
+  // 3️⃣ Create state manager (default cooldown = 500 ms)
   const reactionState = new ReactionState();
 
-  // Debug status element
-  const statusEl = document.createElement('div');
-  statusEl.id = 'debug-status';
-  statusEl.style.cssText = 'position:fixed;top:60px;left:0;right:0;background:rgba(0,0,0,0.9);color:#0f0;padding:8px;font-family:monospace;font-size:12px;z-index:1000;text-align:center;';
-  statusEl.textContent = '⏳ Инициализация...';
-  document.body.appendChild(statusEl);
-
-  function updateStatus(msg) {
-    statusEl.textContent = msg;
-    console.log('[STATUS]', msg);
-  }
-
-  // 3b️⃣ Wait for video to be truly ready
-  updateStatus('⏳ Ожидание видео...');
-  await new Promise((resolve) => {
-    if (video.readyState >= 3) {
-      // HAVE_ENOUGH_DATA
-      resolve();
-    } else {
-      video.oncanplay = () => {
-        video.oncanplay = null;
-        resolve();
-      };
-    }
-  });
-  updateStatus('✅ Видео готово, запуск цикла...');
-
   // 4️⃣ Start the animation loop
+  updateStatus('🚀 Запуск цикла...');
   let frameCount = 0;
-  let lastLandmarkTime = 0;
+
   startLoop(async (timestamp) => {
     frameCount++;
     if (frameCount % 30 === 0) {
-      updateStatus('🔄 Работает... (кадр ' + frameCount + ') video.readyState=' + video.readyState);
+      updateStatus('🔄 Работает... (кадр ' + frameCount + ')');
     }
 
+    addLog('Детекция кадра...');
     // a) Get landmarks for the current frame
     const { landmarks } = await detectHand(video, timestamp);
-    if (!landmarks) return; // no hand detected – skip this frame
+    if (!landmarks) {
+      addLog('landmarks = null');
+      return; // no hand detected – skip this frame
+    }
 
+    addLog('✋ Рука обнаружена! landmarks=' + landmarks.length);
     updateStatus('✋ Рука обнаружена!');
 
     // b) Identify which gesture (if any) the landmarks represent
     const gesture = detectGesture(landmarks);
     if (!gesture) {
+      addLog('Жест не распознан');
       updateStatus('❌ Жест не распознан');
       return;
     }
 
-    // c) Apply cooldown / duplicate filtering
-    const toEmit = reactionState.update(gesture);
-    if (!toEmit) return; // still in cooldown period
-
-    // d) Render the appropriate emoji
-    updateStatus('🎯 Жест: ' + toEmit);
-    showEmoji(toEmit, landmarks);
-  });
-
-    // a) Get landmarks for the current frame
-    const { landmarks } = await detectHand(video, timestamp);
-    if (!landmarks) return; // no hand detected – skip this frame
-
-    updateStatus('✋ Рука обнаружена!');
-
-    // b) Identify which gesture (if any) the landmarks represent
-    const gesture = detectGesture(landmarks);
-    if (!gesture) {
-      updateStatus('❌ Жест не распознан');
-      return;
-    }
-
-    // c) Apply cooldown / duplicate filtering
-    const toEmit = reactionState.update(gesture);
-    if (!toEmit) return; // still in cooldown period
-
-    // d) Render the appropriate emoji
+    addLog('🎯 Жест: ' + gesture);
     updateStatus('🎯 Жест: ' + gesture);
+
+    // c) Apply cooldown / duplicate filtering
+    const toEmit = reactionState.update(gesture);
+    if (!toEmit) {
+      addLog('В cooldown');
+      return; // still in cooldown period
+    }
+
+    // d) Render the appropriate emoji
     showEmoji(toEmit, landmarks);
   });
 

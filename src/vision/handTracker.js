@@ -4,8 +4,6 @@ let hands = null;
 let HandsClassRef = null;
 let currentResolve = null;
 let handsReady = false;
-let canvas = null;
-let ctx = null;
 
 /**
  * Позволяет внедрить (замокать) класс Hands извне (для тестов)
@@ -42,12 +40,6 @@ export async function init() {
     minDetectionConfidence: 0.3,
     minTrackingConfidence: 0.3,
   });
-
-  // Создаём canvas для отрисовки видео
-  canvas = document.createElement('canvas');
-  canvas.width = 640;
-  canvas.height = 480;
-  ctx = canvas.getContext('2d');
 
   // Устанавливаем onResults ОДИН раз при инициализации
   hands.onResults(onResults);
@@ -93,23 +85,19 @@ export function detect(video, time) {
 
     currentResolve = resolve;
 
-    // Timeout fallback - если MediaPipe не ответил за 1000мс
+    // Timeout fallback - увеличил до 3 секунд для мобильных
     const timeoutId = setTimeout(() => {
       if (currentResolve === resolve) {
         currentResolve = null;
         resolve({ landmarks: null });
       }
-    }, 1000);
+    }, 3000);
 
-    // Отрисовываем текущий кадр видео на canvas
-    // Это необходимо для мобильных браузеров, где video element
-    // может не отдавать кадры напрямую в MediaPipe
+    // Передаём видео напрямую
     try {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const result = hands.send({ image: video });
 
-      const result = hands.send({ image: canvas });
-
-      // Если send() вернул Promise (зависит от версии MediaPipe)
+      // Если send() вернул Promise
       if (result instanceof Promise) {
         result.then(() => {
           clearTimeout(timeoutId);
