@@ -54,28 +54,45 @@ async function main() {
   // 3️⃣ Create state manager (default cooldown = 500 ms)
   const reactionState = new ReactionState();
 
+  // Debug status element
+  const statusEl = document.createElement('div');
+  statusEl.id = 'debug-status';
+  statusEl.style.cssText = 'position:fixed;top:60px;left:0;right:0;background:rgba(0,0,0,0.9);color:#0f0;padding:8px;font-family:monospace;font-size:12px;z-index:1000;text-align:center;';
+  statusEl.textContent = '⏳ Инициализация...';
+  document.body.appendChild(statusEl);
+
+  function updateStatus(msg) {
+    statusEl.textContent = msg;
+    console.log('[STATUS]', msg);
+  }
+
   // 4️⃣ Start the animation loop
+  let frameCount = 0;
   startLoop(async (timestamp) => {
+    frameCount++;
+    if (frameCount % 30 === 0) {
+      updateStatus('🔄 Работает... (кадр ' + frameCount + ')');
+    }
+
     // a) Get landmarks for the current frame
     const { landmarks } = await detectHand(video, timestamp);
     if (!landmarks) return; // no hand detected – skip this frame
 
-    console.log('✋ Hand detected, landmarks:', landmarks.length);
+    updateStatus('✋ Рука обнаружена!');
 
     // b) Identify which gesture (if any) the landmarks represent
     const gesture = detectGesture(landmarks);
     if (!gesture) {
-      console.log('❌ No gesture recognized');
+      updateStatus('❌ Жест не распознан');
       return;
     }
-    console.log('🎯 Gesture:', gesture);
 
     // c) Apply cooldown / duplicate filtering
     const toEmit = reactionState.update(gesture);
     if (!toEmit) return; // still in cooldown period
 
     // d) Render the appropriate emoji
-    console.log('✅ Emitting emoji:', toEmit);
+    updateStatus('🎯 Жест: ' + gesture);
     showEmoji(toEmit, landmarks);
   });
 

@@ -44,9 +44,9 @@ function isFingerExtended(landmarks, finger) {
     Math.pow(tip.z - wrist.z, 2);
 
   // If tip is farther than base, finger is likely extended
-  // Use a relative distance ratio to determine extension
+  // Lowered from 1.5 to 1.2 for better mobile compatibility
   const ratio = distToTip / distToBase;
-  return ratio > 1.5;
+  return ratio > 1.2;
 }
 
 /**

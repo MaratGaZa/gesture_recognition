@@ -17,15 +17,33 @@ export async function initCamera(videoEl) {
   try {
     // Request video stream (no audio)
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user' },
+      video: {
+        facingMode: 'user',
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
       audio: false,
     });
 
     // Attach stream to video element
     videoEl.srcObject = stream;
 
-    // Ensure video plays
-    await videoEl.play();
+    // Ensure video plays - wait for it to be ready
+    await new Promise((resolve, reject) => {
+      if (videoEl.readyState >= 3) {
+        // HAVE_ENOUGH_DATA or higher
+        videoEl.play().then(resolve).catch(reject);
+      } else {
+        videoEl.oncanplay = () => {
+          videoEl.oncanplay = null;
+          videoEl.play().then(resolve).catch(reject);
+        };
+        videoEl.onerror = () => {
+          videoEl.onerror = null;
+          reject(new Error('Video element failed to load'));
+        };
+      }
+    });
   } catch (error) {
     // Propagate a clear error message
     console.error('Camera init error:', error);
