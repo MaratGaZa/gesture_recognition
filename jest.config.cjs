@@ -18,6 +18,8 @@ const config = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
+  testPathIgnorePatterns: ['<rootDir>/.claude/'],
+  modulePathIgnorePatterns: ['<rootDir>/.claude/'],
   verbose: true,
   clearMocks: true,
   restoreMocks: true,

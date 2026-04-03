@@ -9,6 +9,11 @@
 export const Gesture = {
   THUMBS_UP: 'THUMBS_UP',
   ROCK: 'ROCK',
+  V_SIGN: 'V_SIGN',
+  PALM: 'PALM',
+  POINT: 'POINT',
+  SHAKA: 'SHAKA',
+  FIST: 'FIST',
 };
 
 /**
@@ -17,6 +22,11 @@ export const Gesture = {
 export const EMOJI_MAP = {
   [Gesture.THUMBS_UP]: '👍',
   [Gesture.ROCK]: '🤘',
+  [Gesture.V_SIGN]: '✌️',
+  [Gesture.PALM]: '🖐️',
+  [Gesture.POINT]: '☝️',
+  [Gesture.SHAKA]: '🤙',
+  [Gesture.FIST]: '✊',
 };
 
 /**
