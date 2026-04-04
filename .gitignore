@@ -1,0 +1,7 @@
+.DS_Store
+.claude/
+.openclaude-profile.json
+*.txt
+test.log
+mediapipe_gesture_reactions.html
+node_modules/

@@ -1,69 +1,109 @@
-// src/render/emojiRenderer.js
-
-/**
- * EmojiRenderer – отвечает за визуальное отображение эмодзи.
- * В текущей реализации отображается один эмодзи в контейнере #emoji-container
- * (созданном в index.html). После небольшого таймаута элемент удаляется,
- * чтобы не захламлять DOM.
- */
-
 import { getEmojiByGesture } from './emojiMap.js';
 
-// Показать эмодзи в центре экрана (если не указаны координаты)
-export function showEmoji(gesture) {
-  showEmojiAt(gesture, null);
+const GESTURE_META = {
+  THUMBS_UP: {
+    label: '👍 Thumbs Up!',
+    reactions: ['❤️', '🧡', '💛', '💜', '💗'],
+  },
+  ROCK: {
+    label: '🤘 Rock!',
+    reactions: ['🔥', '⚡', '💥', '🎸'],
+  },
+  V_SIGN: {
+    label: '✌️ Peace!',
+    reactions: ['✨', '⭐', '🌟', '💫'],
+  },
+  PALM: {
+    label: '🖐️ Palm!',
+    reactions: ['🌈', '💙', '🫧', '☁️'],
+  },
+  POINT: {
+    label: '☝️ Point!',
+    reactions: ['💬', '📝', '📍', '✨'],
+  },
+  SHAKA: {
+    label: '🤙 Shaka!',
+    reactions: ['🌴', '🌊', '☀️', '🍍'],
+  },
+  FIST: {
+    label: '✊ Fist!',
+    reactions: ['💥', '⚡', '🔥', '⭐'],
+  },
+};
+
+let badgeTimer = null;
+
+function getMeta(gesture) {
+  const fallback = getEmojiByGesture(gesture);
+  return (
+    GESTURE_META[gesture] || {
+      label: `${fallback ?? '✨'} ${gesture}`,
+      reactions: fallback ? [fallback] : ['✨'],
+    }
+  );
 }
 
-/**
- * Показывает эмодзи, позиционируя его рядом с рукой.
- *
- * @param {string} gesture - константа жеста (THUMBS_UP | ROCK)
- * @param {Array|null} landmarks - массив из 21 точек руки (может быть null)
- */
-export function showEmojiAt(gesture, landmarks) {
-  const symbol = getEmojiByGesture(gesture);
-  if (!symbol) return;
+function showBadge(label) {
+  const badge = document.getElementById('gesture-badge');
+  if (!badge) return;
 
+  badge.textContent = label;
+  badge.classList.remove('is-visible');
+  void badge.offsetWidth;
+  badge.classList.add('is-visible');
+  badge.style.opacity = '1';
+
+  clearTimeout(badgeTimer);
+  badgeTimer = setTimeout(() => {
+    badge.style.opacity = '0';
+    badge.classList.remove('is-visible');
+  }, 2000);
+}
+
+export function showEmoji(gesture) {
   const container = document.getElementById('emoji-container');
   if (!container) return;
 
-  const el = document.createElement('div');
-  el.className = 'emoji visible';
-  el.textContent = symbol;
+  const meta = getMeta(gesture);
+  const count = 12;
 
-  // Если переданы landmarks – позиционируем около запястья (landmarks[0])
-  // Переводим нормализованные координаты (0‑1) в пиксели относительно video‑элемента.
-  if (landmarks && landmarks[0]) {
-    const video = document.getElementById('video');
-    if (video) {
-      const rect = video.getBoundingClientRect();
-      const wrist = landmarks[0];
-      const x = rect.left + wrist.x * rect.width;
-      const y = rect.top + wrist.y * rect.height;
+  for (let i = 0; i < count; i += 1) {
+    const el = document.createElement('div');
+    const left = 5 + Math.random() * 90;
+    const top = 20 + Math.random() * 65;
+    const duration = 1 + Math.random() * 0.9;
+    const delay = Math.random() * 0.6;
+    const fontSize = 22 + Math.random() * 22;
+    const symbol = meta.reactions[Math.floor(Math.random() * meta.reactions.length)];
 
-      el.style.position = 'absolute';
-      el.style.left = `${x}px`;
-      el.style.top = `${y}px`;
-      // Смещаем немного, чтобы эмодзи не накладывался прямо на палец
-      el.style.transform = 'translate(-50%, -110%)';
-    }
-  } else {
-    // Центрируем в контейнере, если координаты неизвестны
-    el.style.position = 'absolute';
-    el.style.left = '50%';
-    el.style.top = '50%';
-    el.style.transform = 'translate(-50%, -50%)';
+    el.className = 'emoji-burst';
+    el.textContent = symbol;
+    el.style.left = `${left}%`;
+    el.style.top = `${top}%`;
+    el.style.fontSize = `${fontSize}px`;
+    el.style.setProperty('--float-duration', `${duration}s`);
+    el.style.setProperty('--float-delay', `${delay}s`);
+
+    container.appendChild(el);
+    setTimeout(() => el.remove(), (duration + delay + 0.3) * 1000);
   }
 
-  container.appendChild(el);
+  showBadge(meta.label);
+}
 
-  // Удаляем через 800 мс (параметр можно вынести в константу)
-  const DISPLAY_TIME = 800;
-  setTimeout(() => {
-    el.classList.remove('visible');
-    // небольшая задержка, чтобы анимация исчезновения успела выполнить переход opacity
-    setTimeout(() => {
-      if (el.parentNode) el.parentNode.removeChild(el);
-    }, 300);
-  }, DISPLAY_TIME);
+export function clearEmojiEffects() {
+  const container = document.getElementById('emoji-container');
+  if (container) {
+    container.replaceChildren();
+  }
+
+  const badge = document.getElementById('gesture-badge');
+  if (badge) {
+    badge.textContent = '';
+    badge.style.opacity = '0';
+    badge.classList.remove('is-visible');
+  }
+
+  clearTimeout(badgeTimer);
+  badgeTimer = null;
 }

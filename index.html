@@ -1,20 +1,95 @@
 <!doctype html>
 <html lang="ru">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Stream Fan — Жесты в эмодзи</title>
-        <link rel="stylesheet" href="style.css" />
-        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    </head>
-    <body>
-        <div id="app">
-            <h1>Stream Fan</h1>
-            <p>Распознавание жестов руки и вывод эмодзи в реальном времени.</p>
-            <video id="video" autoplay playsinline muted></video>
-            <div id="emoji-container"></div>
-            <div id="error-message" style="display: none"></div>
-        </div>
-        <script type="module" src="/src/app.js"></script>
-    </body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stream Fan — Жесты в эмодзи</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  </head>
+  <body>
+    <div id="app" class="page-shell">
+      <header class="hero">
+        <div class="hero__eyebrow">Live reactions</div>
+        <h1>Stream Fan</h1>
+        <p>
+          Покажите жест в камеру, и страница превратит его в анимированные
+          реакции как в референсной демо-версии.
+        </p>
+      </header>
+
+      <main class="page-content">
+        <section class="stage-panel">
+          <video id="video" autoplay playsinline muted></video>
+
+          <div id="camera-stage" class="camera-stage">
+            <canvas id="camera-canvas" class="camera-stage__canvas"></canvas>
+
+            <div id="placeholder" class="camera-stage__overlay camera-stage__placeholder">
+              <span class="placeholder__icon">🖐️</span>
+              <span class="placeholder__text">
+                Нажмите Start camera и покажите жест в камеру
+              </span>
+            </div>
+
+            <div id="loading-overlay" class="camera-stage__overlay camera-stage__loading hidden">
+              <div class="loading-spinner"></div>
+              <span>Загрузка модели...</span>
+            </div>
+
+            <div id="emoji-container" class="camera-stage__reactions"></div>
+
+            <div id="gesture-badge" class="gesture-badge"></div>
+          </div>
+
+          <div class="controls-row">
+            <button id="camera-toggle" class="primary-button" type="button">
+              Start camera
+            </button>
+            <span id="status-text" class="status-text"></span>
+          </div>
+        </section>
+
+        <section class="gesture-guide" aria-label="Поддерживаемые жесты">
+          <article class="gesture-card">
+            <div class="gesture-card__emoji">👍</div>
+            <div class="gesture-card__title">Thumbs up</div>
+            <div class="gesture-card__subtitle">❤️ Сердечки</div>
+          </article>
+          <article class="gesture-card">
+            <div class="gesture-card__emoji">🤘</div>
+            <div class="gesture-card__title">Rock</div>
+            <div class="gesture-card__subtitle">🔥 Огонь</div>
+          </article>
+          <article class="gesture-card">
+            <div class="gesture-card__emoji">✌️</div>
+            <div class="gesture-card__title">Peace</div>
+            <div class="gesture-card__subtitle">✨ Звёзды</div>
+          </article>
+          <article class="gesture-card">
+            <div class="gesture-card__emoji">🖐️</div>
+            <div class="gesture-card__title">Palm</div>
+            <div class="gesture-card__subtitle">🌈 Волна</div>
+          </article>
+          <article class="gesture-card">
+            <div class="gesture-card__emoji">☝️</div>
+            <div class="gesture-card__title">Point</div>
+            <div class="gesture-card__subtitle">💬 Подсказки</div>
+          </article>
+          <article class="gesture-card">
+            <div class="gesture-card__emoji">🤙</div>
+            <div class="gesture-card__title">Shaka</div>
+            <div class="gesture-card__subtitle">🌴 Вайб</div>
+          </article>
+          <article class="gesture-card gesture-card--wide">
+            <div class="gesture-card__emoji">✊</div>
+            <div class="gesture-card__title">Fist</div>
+            <div class="gesture-card__subtitle">💥 Ударный акцент</div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/src/app.js"></script>
+  </body>
 </html>
